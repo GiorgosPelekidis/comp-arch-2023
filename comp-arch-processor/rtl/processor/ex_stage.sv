@@ -96,7 +96,7 @@ output logic brcond_result
 );
 
 logic [63:0] temp;
-assign temp = opa * opb;
+assign temp = opa * opb;																	// (1) ==================
 
 //result 
 always_comb begin
