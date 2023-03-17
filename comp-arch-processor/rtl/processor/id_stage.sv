@@ -44,7 +44,7 @@ always_comb begin
 				`ADD_INST  : alu_func = `ALU_ADD;   
 				`SUB_INST  : alu_func = `ALU_SUB;    
 				`MUL_INST  : alu_func = `ALU_MUL;										// (1) ===============
-				`MULHU_INST: alu_func = `ALU_MUL;										// (1) ===============
+				`MULHU_INST: alu_func = `ALU_MULHU;										// (1) ===============
 				`XOR_INST  : alu_func = `ALU_XOR;   
 				`OR_INST   : alu_func = `ALU_OR;   
 				`AND_INST  : alu_func = `ALU_AND;   
