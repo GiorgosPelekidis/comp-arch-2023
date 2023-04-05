@@ -34,122 +34,126 @@ always_comb begin
 	uncond_branch = `FALSE;
 	illegal = `FALSE;
 
-	case (inst[6:0])
-		`R_TYPE: begin
-			opa_select = `ALU_OPA_IS_REGA;
-			opb_select = `ALU_OPB_IS_REGB;
-			dest_reg = `DEST_IS_REGC;
+	if (valid_inst_in) begin																			// edited
+		case (inst[6:0])
+			`R_TYPE: begin
+				opa_select = `ALU_OPA_IS_REGA;
+				opb_select = `ALU_OPB_IS_REGB;
+				dest_reg = `DEST_IS_REGC;
 
-			case({inst[14:12], inst[31:25]})
-				`ADD_INST  : alu_func = `ALU_ADD;   
-				`SUB_INST  : alu_func = `ALU_SUB;    
-				`MUL_INST  : alu_func = `ALU_MUL;										// (1) ===============
-				`MULHU_INST: alu_func = `ALU_MULHU;										// (1) ===============
-				`XOR_INST  : alu_func = `ALU_XOR;   
-				`OR_INST   : alu_func = `ALU_OR;   
-				`AND_INST  : alu_func = `ALU_AND;   
-				`SLL_INST  : alu_func = `ALU_SLL;   
-				`SRL_INST  : alu_func = `ALU_SRL;   
-				`SRA_INST  : alu_func = `ALU_SRA;   
-				`SLT_INST  : alu_func = `ALU_SLT;   
-				`SLTU_INST : alu_func = `ALU_SLTU;
-				default: illegal = `TRUE;
-			endcase 
-		end //R-TYPE
+				case({inst[14:12], inst[31:25]})
+					`ADD_INST  : alu_func = `ALU_ADD;   
+					`SUB_INST  : alu_func = `ALU_SUB;    
+					`MUL_INST  : alu_func = `ALU_MUL;										// (1) ===============
+					`MULHU_INST: alu_func = `ALU_MULHU;										// (1) ===============
+					`XOR_INST  : alu_func = `ALU_XOR;   
+					`OR_INST   : alu_func = `ALU_OR;   
+					`AND_INST  : alu_func = `ALU_AND;   
+					`SLL_INST  : alu_func = `ALU_SLL;   
+					`SRL_INST  : alu_func = `ALU_SRL;   
+					`SRA_INST  : alu_func = `ALU_SRA;   
+					`SLT_INST  : alu_func = `ALU_SLT;   
+					`SLTU_INST : alu_func = `ALU_SLTU;
+					default: illegal = `TRUE;
+				endcase 
+			end //R-TYPE
 
-		`I_ARITH_TYPE: begin
-			opa_select = `ALU_OPA_IS_REGA;
-			opb_select = `ALU_OPB_IS_IMM;
-			dest_reg = `DEST_IS_REGC;
+			`I_ARITH_TYPE: begin
+				opa_select = `ALU_OPA_IS_REGA;
+				opb_select = `ALU_OPB_IS_IMM;
+				dest_reg = `DEST_IS_REGC;
 
-			case(inst[14:12])
-				`ADDI_INST : alu_func = `ALU_ADD;
-				`XORI_INST : alu_func = `ALU_XOR;
-				`ORI_INST  : alu_func = `ALU_OR;
-				`ANDI_INST : alu_func = `ALU_AND;
-				`SLLI_INST : alu_func = `ALU_SLL;
-				`SRLI_INST, `SRAI_INST: begin
-					//This checks if any of the bits are 1 
-					//to distinguish between the 2 instructions
-					//because one has imm[5:11] = inst[25:30] = 0x00 and the other 0x20
-					//If the ISA changes this check might need to be modified
-					alu_func = |inst[31:25] ? `ALU_SRA : `ALU_SRL;
-				end
-				`SLTI_INST  : alu_func = `ALU_SLT;
-				`SLTIU_INST : alu_func = `ALU_SLTU;
-				default: illegal = `TRUE;
-			endcase 
-		end //I_ARITH_TYPE
+				case(inst[14:12])
+					`ADDI_INST : alu_func = `ALU_ADD;
+					`XORI_INST : alu_func = `ALU_XOR;
+					`ORI_INST  : alu_func = `ALU_OR;
+					`ANDI_INST : alu_func = `ALU_AND;
+					`SLLI_INST : alu_func = `ALU_SLL;
+					`SRLI_INST, `SRAI_INST: begin
+						//This checks if any of the bits are 1 
+						//to distinguish between the 2 instructions
+						//because one has imm[5:11] = inst[25:30] = 0x00 and the other 0x20
+						//If the ISA changes this check might need to be modified
+						alu_func = |inst[31:25] ? `ALU_SRA : `ALU_SRL;
+					end
+					`SLTI_INST  : alu_func = `ALU_SLT;
+					`SLTIU_INST : alu_func = `ALU_SLTU;
+					default: illegal = `TRUE;
+				endcase 
+			end //I_ARITH_TYPE
 
-		`I_LD_TYPE: begin
-			opa_select = `ALU_OPA_IS_REGA;
-			opb_select = `ALU_OPB_IS_IMM;
-			dest_reg = `DEST_IS_REGC;
-			rd_mem = `TRUE;
-			alu_func = `ALU_ADD;
-			illegal=(inst[14:12]!=2)?`TRUE:`FALSE;			
-		end //I_LD_TYPE
+			`I_LD_TYPE: begin
+				opa_select = `ALU_OPA_IS_REGA;
+				opb_select = `ALU_OPB_IS_IMM;
+				dest_reg = `DEST_IS_REGC;
+				rd_mem = `TRUE;
+				alu_func = `ALU_ADD;
+				illegal=(inst[14:12]!=2)?`TRUE:`FALSE;			
+			end //I_LD_TYPE
 
-		`S_TYPE: begin
-			opa_select = `ALU_OPA_IS_REGA;
-			opb_select = `ALU_OPB_IS_IMM;
-			alu_func = `ALU_ADD;
+			`S_TYPE: begin
+				opa_select = `ALU_OPA_IS_REGA;
+				opb_select = `ALU_OPB_IS_IMM;
+				alu_func = `ALU_ADD;
+				
+				case(inst[14:12])
+					`SW_INST:   wr_mem = `TRUE;
+					default: illegal = `TRUE;
+				endcase
+			end //S_TYPE
 			
-			case(inst[14:12])
-				`SW_INST:   wr_mem = `TRUE;
-				default: illegal = `TRUE;
-			endcase
-		end //S_TYPE
-		
-		`B_TYPE: begin
-			opa_select = `ALU_OPA_IS_PC;
-			opb_select = `ALU_OPB_IS_IMM;
-			cond_branch = `TRUE;
+			`B_TYPE: begin
+				opa_select = `ALU_OPA_IS_PC;
+				opb_select = `ALU_OPB_IS_IMM;
+				cond_branch = `TRUE;
+				
+				case(inst[14:12])
+					3'd2, 3'd3: illegal = `TRUE;
+					default: alu_func = `ALU_ADD;
+				endcase
+			end //B_TYPE
 			
-			case(inst[14:12])
-				3'd2, 3'd3: illegal = `TRUE;
-				default: alu_func = `ALU_ADD;
-			endcase
-		end //B_TYPE
-		
-		`J_TYPE: begin
-			opa_select = `ALU_OPA_IS_PC;
-			opb_select = `ALU_OPB_IS_4;
-			dest_reg = `DEST_IS_REGC;
-			alu_func = `ALU_ADD;
-			uncond_branch = `TRUE;
-		end //J-TYPE
-		
-		`I_JAL_TYPE: begin
-			opa_select = `ALU_OPA_IS_PC;
-			opb_select = `ALU_OPB_IS_4;
-			dest_reg = `DEST_IS_REGC;
-			alu_func = `ALU_ADD;
-			uncond_branch = `TRUE;
+			`J_TYPE: begin
+				opa_select = `ALU_OPA_IS_PC;
+				opb_select = `ALU_OPB_IS_4;
+				dest_reg = `DEST_IS_REGC;
+				alu_func = `ALU_ADD;
+				uncond_branch = `TRUE;
+			end //J-TYPE
 			
-			illegal = (inst[14:12] != 3'h0) ? `TRUE : `FALSE;
-		end //I_JAL_TYPE
+			`I_JAL_TYPE: begin
+				opa_select = `ALU_OPA_IS_PC;
+				opb_select = `ALU_OPB_IS_4;
+				dest_reg = `DEST_IS_REGC;
+				alu_func = `ALU_ADD;
+				uncond_branch = `TRUE;
+				
+				illegal = (inst[14:12] != 3'h0) ? `TRUE : `FALSE;
+			end //I_JAL_TYPE
+			
+			`U_LD_TYPE: begin
+				opa_select = `ALU_OPA_IS_ZR;
+				opb_select = `ALU_OPB_IS_IMM;
+				dest_reg = `DEST_IS_REGC;
+				alu_func = `ALU_ADD;
+			end //U_LD_TYPE
+			
+			`U_AUIPC_TYPE: begin
+				opa_select = `ALU_OPA_IS_PC;
+				opb_select = `ALU_OPB_IS_IMM;
+				dest_reg = `DEST_IS_REGC;
+				alu_func = `ALU_ADD;
+			end //U_AUIPC_TYPE
+			
+			`I_BREAK_TYPE: begin
+				illegal = (inst[31:20] != 12'h1); //if imm=0x1 it is a ebreak (environmental break)
+			end
+			
+			default: illegal = `TRUE;
 		
-		`U_LD_TYPE: begin
-			opa_select = `ALU_OPA_IS_ZR;
-			opb_select = `ALU_OPB_IS_IMM;
-			dest_reg = `DEST_IS_REGC;
-			alu_func = `ALU_ADD;
-		end //U_LD_TYPE
-		
-		`U_AUIPC_TYPE: begin
-			opa_select = `ALU_OPA_IS_PC;
-			opb_select = `ALU_OPB_IS_IMM;
-			dest_reg = `DEST_IS_REGC;
-			alu_func = `ALU_ADD;
-		end //U_AUIPC_TYPE
-		
-		`I_BREAK_TYPE: begin
-			illegal = (inst[31:20] != 12'h1); //if imm=0x1 it is a ebreak (environmental break)
-		end
-		
-		default: illegal = `TRUE;
-	endcase 
+		endcase 
+	end else dest_reg = `DEST_NONE;																						// edited
+	
 end 
 endmodule // inst_decoder
 
@@ -166,6 +170,9 @@ input logic	        mem_wb_reg_wr,   	 	//Does the instruction write to rd?
 input logic [4:0]	mem_wb_dest_reg_idx, 	//index of rd
 input logic [31:0] 	wb_reg_wr_data_out, 	// Reg write data from WB Stage
 input logic         if_id_valid_inst,
+
+input logic [4:0]	id_ex_dest_reg_idx,																							// edited
+input logic [4:0]	ex_mem_dest_reg_idx,																						// edited
 
 output logic [31:0] id_ra_value_out,    	// reg A value
 output logic [31:0] id_rb_value_out,    	// reg B value
@@ -184,7 +191,9 @@ output logic 	    id_wr_mem_out,          // does inst write memory?
 output logic 		cond_branch,
 output logic        uncond_branch,
 output logic       	id_illegal_out,
-output logic       	id_valid_inst_out	  	// is inst a valid instruction to be counted for CPI calculations?
+output logic       	id_valid_inst_out,	  	// is inst a valid instruction to be counted for CPI calculations?
+// output logic		if_id_enable,																											// edited
+output logic 		stall																													// edited
 );
    
 logic dest_reg_select;
@@ -215,9 +224,12 @@ regfile regf_0(.clk		(clk),
 
 assign id_rb_value_out=rb_val;
 
+logic decoder_valid_inst_in;																						// edited
+assign decoder_valid_inst_in = if_id_valid_inst && ~stall;															// edited
+
 // instantiate the instruction inst_decoder
 inst_decoder inst_decoder_0(.inst	        (if_id_IR),
-							.valid_inst_in  (if_id_valid_inst),
+							.valid_inst_in  (decoder_valid_inst_in),												// edited
 							.opa_select		(id_opa_select_out),
 							.opb_select		(id_opb_select_out),
 							.alu_func		(id_alu_func_out),
@@ -228,6 +240,17 @@ inst_decoder inst_decoder_0(.inst	        (if_id_IR),
 							.uncond_branch	(uncond_branch),
 							.illegal		(id_illegal_out),
 							.valid_inst		(id_valid_inst_out));
+
+																									// start edited =======================
+always_comb begin 
+	case (if_id_IR[6:0])
+		`R_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
+		`I_ARITH_TYPE, `I_LD_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx );
+		`S_TYPE: stall = rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
+		default: stall = 0;
+	endcase
+end
+																									// end edited =========================
 
 always_comb begin : write_to_rd
 	case(if_id_IR[6:0])

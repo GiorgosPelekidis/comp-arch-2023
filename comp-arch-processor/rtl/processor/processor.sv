@@ -133,6 +133,7 @@ assign pipeline_commit_wr_data 	= wb_reg_wr_data_out;
 assign pipeline_commit_NPC 		= if_NPC_out;
 assign pipeline_commit_wr 		= mem_wb_reg_wr;
 
+logic uni_stall;																						// edited
 
 //////////////////////////////////////////////////
 //                                              //
@@ -144,9 +145,10 @@ if_stage if_stage_0 (
 .clk 				(clk),
 .rst 				(rst),
 .mem_wb_valid_inst	(mem_wb_valid_inst),
-.ex_take_branch_out	(ex_mem_take_branch),
-.ex_target_PC_out	(ex_mem_target_PC),
+.ex_take_branch_out	(ex_take_branch_out),
+.ex_target_PC_out	(ex_target_PC_out),																// edited
 .Imem2proc_data		(instruction),
+.if_stall			(uni_stall),																				// edited
 
 
 // Outputs
@@ -162,16 +164,16 @@ if_stage if_stage_0 (
 //            IF/ID Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-assign if_id_enable = 1;
+// assign if_id_enable = 1;																					// edited
 
 always_ff @(posedge clk or posedge rst) begin
-	if(rst) begin
+	if(rst || ex_take_branch_out) begin																			// edited
 		if_id_PC         <=  0;
 		if_id_IR         <=  `NOOP_INST;
 		if_id_NPC        <=  0;
         if_id_valid_inst <=  0;
     end 
-    else if (if_id_enable) begin
+    else if (!uni_stall && !ex_take_branch_out) begin
 		if_id_PC         <=  if_PC_out;
 		if_id_NPC        <=  if_NPC_out;
 		if_id_IR         <=  if_IR_out;
@@ -196,6 +198,8 @@ id_stage id_stage_0 (
 .mem_wb_reg_wr			(mem_wb_reg_wr), 
 .wb_reg_wr_data_out     (wb_reg_wr_data_out),  	
 .if_id_valid_inst       (if_id_valid_inst),
+.id_ex_dest_reg_idx		(id_ex_dest_reg_idx),					// edited
+.ex_mem_dest_reg_idx	(ex_mem_dest_reg_idx),					// edited
 
 // Outputs
 .id_reg_wr_out          (id_reg_wr_out),
@@ -213,7 +217,8 @@ id_stage id_stage_0 (
 .cond_branch			(id_cond_branch),
 .uncond_branch			(id_uncond_branch),
 .id_illegal_out			(id_illegal_out),
-.id_valid_inst_out		(id_valid_inst_out)
+.id_valid_inst_out		(id_valid_inst_out),
+.stall					(uni_stall)																// edited
 );
 
 //////////////////////////////////////////////////
@@ -221,10 +226,10 @@ id_stage id_stage_0 (
 //            ID/EX Pipeline Register           //
 //                                              //
 //////////////////////////////////////////////////
-assign id_ex_enable =1; // disabled when HzDU initiates a stall
+assign id_ex_enable =1; // disabled when HzDU initiates a stall								// edited
 // synopsys sync_set_rst "rst"
 always_ff @(posedge clk or posedge rst) begin
-	if (rst) begin //sys_rst
+	if (rst || ex_take_branch_out) begin //sys_rst												// edited
 		//Control
 		id_ex_funct3		<=  0;
 		id_ex_opa_select    <=  `ALU_OPA_IS_REGA;
@@ -250,7 +255,7 @@ always_ff @(posedge clk or posedge rst) begin
 		//Debug
 		id_ex_NPC           <=  0;
     end else begin 
-		if (id_ex_enable) begin
+		if (id_ex_enable && !ex_take_branch_out) begin
 			id_ex_funct3		<=  id_funct3_out;
 			id_ex_opa_select    <=  id_opa_select_out;
 			id_ex_opb_select    <=  id_opb_select_out;
@@ -342,7 +347,7 @@ always_ff @(posedge clk or posedge rst) begin
 			ex_mem_regb         <=  id_ex_regb;		
 			ex_mem_alu_result   <=  ex_alu_result_out;
 			ex_mem_take_branch  <=	ex_take_branch_out;
-			ex_mem_target_PC	<=  ex_target_PC_out;			
+			ex_mem_target_PC	<=  ex_target_PC_out;
 			ex_mem_NPC			<=  id_ex_NPC;
 		end // if
 	end // else: !if(rst)
