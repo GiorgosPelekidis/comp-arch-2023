@@ -70,7 +70,7 @@ Disassembly of section .text:
   e8:	00f707b3          	add	a5,a4,a5
   ec:	00179713          	slli	a4,a5,0x1
   f0:	fe442783          	lw	a5,-28(s0)
-  f4:	00f707b3          	add	a5,a4,a5
+  f4:	00f707b3          	add	a5,a4,a5             // dependency
   f8:	00279793          	slli	a5,a5,0x2
   fc:	ff040713          	addi	a4,s0,-16
  100:	00f707b3          	add	a5,a4,a5

@@ -34,7 +34,7 @@ always_comb begin
 	uncond_branch = `FALSE;
 	illegal = `FALSE;
 
-	if (valid_inst_in) begin																			// edited
+	if (valid_inst_in) begin											// (part2) edited =====================
 		case (inst[6:0])
 			`R_TYPE: begin
 				opa_select = `ALU_OPA_IS_REGA;
@@ -152,7 +152,7 @@ always_comb begin
 			default: illegal = `TRUE;
 		
 		endcase 
-	end else dest_reg = `DEST_NONE;																						// edited
+	end else dest_reg = `DEST_NONE;										// (part2) edited =====================
 	
 end 
 endmodule // inst_decoder
@@ -171,8 +171,8 @@ input logic [4:0]	mem_wb_dest_reg_idx, 	//index of rd
 input logic [31:0] 	wb_reg_wr_data_out, 	// Reg write data from WB Stage
 input logic         if_id_valid_inst,
 
-input logic [4:0]	id_ex_dest_reg_idx,																							// edited
-input logic [4:0]	ex_mem_dest_reg_idx,																						// edited
+input logic [4:0]	id_ex_dest_reg_idx,									// (part2) edited =====================
+input logic [4:0]	ex_mem_dest_reg_idx,								// (part2) edited =====================
 
 output logic [31:0] id_ra_value_out,    	// reg A value
 output logic [31:0] id_rb_value_out,    	// reg B value
@@ -192,8 +192,8 @@ output logic 		cond_branch,
 output logic        uncond_branch,
 output logic       	id_illegal_out,
 output logic       	id_valid_inst_out,	  	// is inst a valid instruction to be counted for CPI calculations?
-// output logic		if_id_enable,																											// edited
-output logic 		stall																													// edited
+// output logic		if_id_enable,										// (part2) edited =====================
+output logic 		stall												// (part2) edited =====================
 );
    
 logic dest_reg_select;
@@ -224,12 +224,12 @@ regfile regf_0(.clk		(clk),
 
 assign id_rb_value_out=rb_val;
 
-logic decoder_valid_inst_in;																						// edited
-assign decoder_valid_inst_in = if_id_valid_inst && ~stall;															// edited
+logic decoder_valid_inst_in;											// (part2) edited =====================
+assign decoder_valid_inst_in = if_id_valid_inst && ~stall;				// (part2) edited =====================
 
 // instantiate the instruction inst_decoder
 inst_decoder inst_decoder_0(.inst	        (if_id_IR),
-							.valid_inst_in  (decoder_valid_inst_in),												// edited
+							.valid_inst_in  (decoder_valid_inst_in),	// (part2) edited =====================
 							.opa_select		(id_opa_select_out),
 							.opb_select		(id_opb_select_out),
 							.alu_func		(id_alu_func_out),
@@ -241,16 +241,14 @@ inst_decoder inst_decoder_0(.inst	        (if_id_IR),
 							.illegal		(id_illegal_out),
 							.valid_inst		(id_valid_inst_out));
 
-																									// start edited =======================
-always_comb begin 
+always_comb begin 														// (part2) start =======================
 	case (if_id_IR[6:0])
 		`R_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
 		`I_ARITH_TYPE, `I_LD_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx );
 		`S_TYPE: stall = rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
 		default: stall = 0;
 	endcase
-end
-																									// end edited =========================
+end																		// (part2) end =========================
 
 always_comb begin : write_to_rd
 	case(if_id_IR[6:0])
