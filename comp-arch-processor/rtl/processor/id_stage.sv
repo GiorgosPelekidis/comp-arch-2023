@@ -243,7 +243,7 @@ inst_decoder inst_decoder_0(.inst	        (if_id_IR),
 
 always_comb begin 														// (part2) start =======================
 	case (if_id_IR[6:0])
-		`R_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
+		`R_TYPE, `B_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
 		`I_ARITH_TYPE, `I_LD_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx );
 		`S_TYPE: stall = rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
 		default: stall = 0;
