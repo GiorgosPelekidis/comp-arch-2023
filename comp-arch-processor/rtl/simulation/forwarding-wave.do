@@ -6,7 +6,8 @@ add wave -noupdate -radix hexadecimal /processor_tb/proc_module/id_stage_0/if_id
 add wave -noupdate /processor_tb/proc_module/id_stage_0/id_ex_rd_mem
 add wave -noupdate /processor_tb/proc_module/id_stage_0/ex_mem_rd_mem
 add wave -noupdate /processor_tb/proc_module/id_stage_0/stall
-add wave -noupdate /processor_tb/proc_module/id_stage_0/forward
+add wave -noupdate /processor_tb/proc_module/id_stage_0/forward_a
+add wave -noupdate /processor_tb/proc_module/id_stage_0/forward_b
 add wave -noupdate -radix unsigned /processor_tb/proc_module/ex_stage_0/ex_alu_result_out
 add wave -noupdate -radix unsigned /processor_tb/proc_module/mem_stage_0/mem_result_out
 add wave -noupdate -radix unsigned /processor_tb/proc_module/wb_stage_0/wb_reg_wr_data_out

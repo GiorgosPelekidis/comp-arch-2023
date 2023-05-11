@@ -255,36 +255,37 @@ always_comb begin
 	endcase
 end
 
-logic forward;
+logic forward_a;
+logic forward_b;
 
-always_comb begin										// (forwarding) start ==================================
-	case (if_id_IR[6:0])	// forward enable
-		`R_TYPE, `B_TYPE, `S_TYPE: 	forward = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( ((rb_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((rb_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || rb_idx == mem_wb_dest_reg_idx );
-		`I_ARITH_TYPE, `I_LD_TYPE: 	forward = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || ra_idx == mem_wb_dest_reg_idx );
-		default: 					forward = 0;
+always_comb begin                                       // (forwarding) start ==================================
+	case (if_id_IR[6:0])    // forward enable
+    	`R_TYPE, `B_TYPE, `S_TYPE:  begin
+                            	forward_a = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || ra_idx == mem_wb_dest_reg_idx );
+                                forward_b = rb_idx != 5'd0 && ( ((rb_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((rb_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || rb_idx == mem_wb_dest_reg_idx );
+                                end
+    	`I_ARITH_TYPE, `I_LD_TYPE:  begin
+            	                forward_a = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || ra_idx == mem_wb_dest_reg_idx );
+         	                    forward_b = 0;
+        	                    end
+    	default:                begin forward_a = 0; forward_b = 0; end
 	endcase
 
 	id_ra_value_out = ra_val;
 	id_rb_value_out = rb_val;
 
-	if (forward) begin
-		case (if_id_IR[6:0])
-			`R_TYPE, `B_TYPE, `S_TYPE: 	begin
-									if ((ra_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_ra_value_out = ex_alu_result_out;
-									else if ((ra_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_ra_value_out = mem_result_out;
-									else id_ra_value_out = wb_reg_wr_data_out;
-									if ((rb_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_rb_value_out = ex_alu_result_out;
-									else if ((rb_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_rb_value_out = mem_result_out;
-									else id_rb_value_out = wb_reg_wr_data_out;
-								end
-			`I_ARITH_TYPE, `I_LD_TYPE: 	begin
-									if ((ra_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_ra_value_out = ex_alu_result_out;
-									else if ((ra_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_ra_value_out = mem_result_out;
-									else id_ra_value_out = wb_reg_wr_data_out;
-								end
-		endcase
+	if (forward_a) begin
+    	if ((ra_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_ra_value_out = ex_alu_result_out;
+    	else if ((ra_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_ra_value_out = mem_result_out;
+    	else id_ra_value_out = wb_reg_wr_data_out;
 	end
-end														// (forwarding) end ====================================
+
+	if (forward_b) begin
+    	if ((rb_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_rb_value_out = ex_alu_result_out;
+        else if ((rb_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_rb_value_out = mem_result_out;
+        else id_rb_value_out = wb_reg_wr_data_out;
+    end
+end                                                     // (forwarding) end ====================================
 
 always_comb begin : write_to_rd
 	case(if_id_IR[6:0])
