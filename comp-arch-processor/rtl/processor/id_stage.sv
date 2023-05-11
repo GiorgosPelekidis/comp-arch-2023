@@ -152,7 +152,7 @@ always_comb begin
 			default: illegal = `TRUE;
 		
 		endcase 
-	end else dest_reg = `DEST_NONE;										// (part2) edited =====================
+	end else dest_reg = `DEST_NONE;										// (stall) edited =====================
 	
 end 
 endmodule // inst_decoder
@@ -165,14 +165,19 @@ input logic 		clk,              		// system clk
 input logic 		rst,              		// system rst
 input logic [31:0] 	if_id_IR,            	// incoming instruction
 input logic [31:0]	if_id_PC,
-input logic	        mem_wb_valid_inst,   	 	//Does the instruction write to rd?
+input logic	        mem_wb_valid_inst,   	//Does the instruction write to rd?
 input logic	        mem_wb_reg_wr,   	 	//Does the instruction write to rd?
 input logic [4:0]	mem_wb_dest_reg_idx, 	//index of rd
-input logic [31:0] 	wb_reg_wr_data_out, 	// Reg write data from WB Stage
+input logic [31:0] 	wb_reg_wr_data_out, 	// Reg write data from WB Stage						// (forwarding) already had it
 input logic         if_id_valid_inst,
 
-input logic [4:0]	id_ex_dest_reg_idx,									// (part2) edited =====================
-input logic [4:0]	ex_mem_dest_reg_idx,								// (part2) edited =====================
+input logic [4:0]	id_ex_dest_reg_idx,									// (stall) edited =====================
+input logic [4:0]	ex_mem_dest_reg_idx,								// (stall) edited =====================
+
+input logic [31:0]	ex_alu_result_out,									// (forwarding) added
+input logic [31:0]	mem_result_out,										// (forwarding) added
+input logic	id_ex_rd_mem,												// (forwarding) added
+input logic	ex_mem_rd_mem,												// (forwarding) added
 
 output logic [31:0] id_ra_value_out,    	// reg A value
 output logic [31:0] id_rb_value_out,    	// reg B value
@@ -192,11 +197,12 @@ output logic 		cond_branch,
 output logic        uncond_branch,
 output logic       	id_illegal_out,
 output logic       	id_valid_inst_out,	  	// is inst a valid instruction to be counted for CPI calculations?
-// output logic		if_id_enable,										// (part2) edited =====================
-output logic 		stall												// (part2) edited =====================
+// output logic		if_id_enable,										// (stall) commented =====================
+output logic 		stall												// (stall) added =========================
 );
    
 logic dest_reg_select;
+logic [31:0] ra_val;												// (forwarding) added
 logic [31:0] rb_val;
 
 //instruction fields read from IF/ID pipeline register
@@ -215,14 +221,14 @@ assign write_en=mem_wb_valid_inst & mem_wb_reg_wr;
 regfile regf_0(.clk		(clk),
 			   .rst		(rst),
 			   .rda_idx	(ra_idx),
-			   .rda_out	(id_ra_value_out), 
+			   .rda_out	(ra_val),										// (forwarding) edited, was id_ra_value_out
 			   .rdb_idx	(rb_idx),
 			   .rdb_out	(rb_val), 
 			   .wr_en	(write_en),
 			   .wr_idx	(mem_wb_dest_reg_idx),
 			   .wr_data	(wb_reg_wr_data_out));
 
-assign id_rb_value_out=rb_val;
+// assign id_rb_value_out=rb_val;										// (forwarding) commented
 
 logic decoder_valid_inst_in;											// (part2) edited =====================
 assign decoder_valid_inst_in = if_id_valid_inst && ~stall;				// (part2) edited =====================
@@ -241,14 +247,44 @@ inst_decoder inst_decoder_0(.inst	        (if_id_IR),
 							.illegal		(id_illegal_out),
 							.valid_inst		(id_valid_inst_out));
 
-always_comb begin 														// (part2) start =======================
-	case (if_id_IR[6:0])
-		`R_TYPE, `B_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
-		`I_ARITH_TYPE, `I_LD_TYPE: stall = ra_idx != 5'd0 && ( ra_idx == id_ex_dest_reg_idx || ra_idx == ex_mem_dest_reg_idx || ra_idx == mem_wb_dest_reg_idx );
-		`S_TYPE: stall = rb_idx != 5'd0 && ( rb_idx == id_ex_dest_reg_idx || rb_idx == ex_mem_dest_reg_idx || rb_idx == mem_wb_dest_reg_idx );
-		default: stall = 0;
+always_comb begin
+	case (if_id_IR[6:0])	// stall control
+		`R_TYPE, `B_TYPE, `S_TYPE: 	stall = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(ex_mem_rd_mem))) || rb_idx != 5'd0 && ( ((rb_idx == id_ex_dest_reg_idx)&(id_ex_rd_mem)) || ((rb_idx == ex_mem_dest_reg_idx)&(ex_mem_rd_mem)));
+		`I_ARITH_TYPE, `I_LD_TYPE: 	stall = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(ex_mem_rd_mem)));
+		default: 					stall = 0;
 	endcase
-end																		// (part2) end =========================
+end
+
+logic forward;
+
+always_comb begin										// (forwarding) start ==================================
+	case (if_id_IR[6:0])	// forward enable
+		`R_TYPE, `B_TYPE, `S_TYPE: 	forward = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || ra_idx == mem_wb_dest_reg_idx ) || rb_idx != 5'd0 && ( ((rb_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((rb_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || rb_idx == mem_wb_dest_reg_idx );
+		`I_ARITH_TYPE, `I_LD_TYPE: 	forward = ra_idx != 5'd0 && ( ((ra_idx == id_ex_dest_reg_idx)&(!id_ex_rd_mem)) || ((ra_idx == ex_mem_dest_reg_idx)&(!ex_mem_rd_mem)) || ra_idx == mem_wb_dest_reg_idx );
+		default: 					forward = 0;
+	endcase
+
+	id_ra_value_out = ra_val;
+	id_rb_value_out = rb_val;
+
+	if (forward) begin
+		case (if_id_IR[6:0])
+			`R_TYPE, `B_TYPE, `S_TYPE: 	begin
+									if ((ra_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_ra_value_out = ex_alu_result_out;
+									else if ((ra_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_ra_value_out = mem_result_out;
+									else id_ra_value_out = wb_reg_wr_data_out;
+									if ((rb_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_rb_value_out = ex_alu_result_out;
+									else if ((rb_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_rb_value_out = mem_result_out;
+									else id_rb_value_out = wb_reg_wr_data_out;
+								end
+			`I_ARITH_TYPE, `I_LD_TYPE: 	begin
+									if ((ra_idx == id_ex_dest_reg_idx)&&(!id_ex_rd_mem)) id_ra_value_out = ex_alu_result_out;
+									else if ((ra_idx == ex_mem_dest_reg_idx)&&(!ex_mem_rd_mem)) id_ra_value_out = mem_result_out;
+									else id_ra_value_out = wb_reg_wr_data_out;
+								end
+		endcase
+	end
+end														// (forwarding) end ====================================
 
 always_comb begin : write_to_rd
 	case(if_id_IR[6:0])
@@ -300,7 +336,7 @@ always_comb begin : immediate_mux
 	endcase
 end
 
-assign pc_add_opa =(if_id_IR[6:0] == `I_JAL_TYPE)? id_ra_value_out:if_id_PC;
+assign pc_add_opa =(if_id_IR[6:0] == `I_JAL_TYPE)? ra_val : if_id_PC;		// (forwarding) edited, was id_ra_value_out
 
 
 //target PC to branch to

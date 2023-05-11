@@ -196,7 +196,11 @@ id_stage id_stage_0 (
 .mem_wb_dest_reg_idx	(mem_wb_dest_reg_idx),
 .mem_wb_valid_inst    	(mem_wb_valid_inst),
 .mem_wb_reg_wr			(mem_wb_reg_wr), 
-.wb_reg_wr_data_out     (wb_reg_wr_data_out),  	
+.wb_reg_wr_data_out     (wb_reg_wr_data_out),					// (forwarding) already had it
+.ex_alu_result_out  	(ex_alu_result_out),					// (forwarding) added
+.mem_result_out			(mem_result_out),						// (forwarding) added
+.id_ex_rd_mem			(id_ex_rd_mem),							// (forwarding) added
+.ex_mem_rd_mem			(ex_mem_rd_mem),						// (forwarding) added
 .if_id_valid_inst       (if_id_valid_inst),
 .id_ex_dest_reg_idx		(id_ex_dest_reg_idx),					// edited
 .ex_mem_dest_reg_idx	(ex_mem_dest_reg_idx),					// edited

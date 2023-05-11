@@ -1,6 +1,6 @@
 
-final_tutorial.dmp: array-mult.c
-	riscv64-unknown-elf-gcc -O0 -Wall -nostdlib -march=rv32imav -mabi=ilp32 -T lscript bootstrap.s array-mult.c -o tutorial.elf
+final_tutorial.dmp: repetition.c
+	riscv64-unknown-elf-gcc -O0 -Wall -nostdlib -march=rv32imav -mabi=ilp32 -T lscript bootstrap.s repetition.c -o tutorial.elf
 	riscv64-unknown-elf-elf2hex --bit-width 32 --input tutorial.elf --output testshex.txt
 	riscv64-unknown-elf-objdump -d tutorial.elf>final_tutorial.dmp
 clean:
